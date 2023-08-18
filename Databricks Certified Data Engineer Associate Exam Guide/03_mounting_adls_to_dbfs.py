@@ -69,4 +69,12 @@ display(bank_data)
 
 # COMMAND ----------
 
+dbutils.fs.unmount("/mnt/bronze")
+
+# COMMAND ----------
+
+display(dbutils.fs.mounts())
+
+# COMMAND ----------
+
 

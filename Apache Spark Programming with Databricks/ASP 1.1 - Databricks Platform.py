@@ -109,4 +109,162 @@ displayHTML(html)
 
 # COMMAND ----------
 
+# MAGIC %fs mounts
+
+# COMMAND ----------
+
+# MAGIC %fs help
+
+# COMMAND ----------
+
+dbutils.fs.ls("/databricks-datasets")
+
+# COMMAND ----------
+
+files = dbutils.fs.ls("/databricks-datasets")
+display(files)
+
+# COMMAND ----------
+
+files = dbutils.fs.ls(DA.paths.events)
+display(files)
+
+# COMMAND ----------
+
+spark.sql(f"SET c.events_path = {DA.paths.events}")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS events
+# MAGIC USING DELTA
+# MAGIC OPTIONS (path "${c.events_path}");
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC DESCRIBE EXTENDED events;
+
+# COMMAND ----------
+
+# MAGIC %sql 
+# MAGIC
+# MAGIC SELECT * FROM events;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT traffic_source, SUM(ecommerce.purchase_revenue_in_usd) AS total_revenue
+# MAGIC FROM events
+# MAGIC GROUP BY traffic_source;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC CREATE WIDGET TEXT state DEFAULT "CA";
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT *
+# MAGIC FROM events
+# MAGIC WHERE geo.state = getArgument("state");
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC REMOVE WIDGET state;
+
+# COMMAND ----------
+
+dbutils.widgets.text('name', 'Brickster', 'Name')
+dbutils.widgets.multiselect('colors', 'orange', ['red', 'orange', 'black', 'blue'], 'Traffic Sources')
+
+# COMMAND ----------
+
+name = dbutils.widgets.get('name')
+colors = dbutils.widgets.get('colors').split(',')
+
+html = '<div>Hi {}! Select your color preference.</div>'.format(name)
+for c in colors:
+    html += """<label for='{}' style='color:{}'><input type='radio'> {}</labe><br>""".format(c, c, c)
+
+displayHTML(html)
+
+
+
+# COMMAND ----------
+
+dbutils.widgets.removeAll
+
+# COMMAND ----------
+
+classroom_cleanup()
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC # Lab
+
+# COMMAND ----------
+
+# MAGIC %fs ls dbfs:/mnt/dbacademy-users/
+
+# COMMAND ----------
+
+files = dbutils.fs.ls("dbfs:/mnt/dbacademy-users/")
+display(files)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS users
+# MAGIC USING DELTA
+# MAGIC OPTIONS (path "${DA.paths.users}");
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS sales
+# MAGIC USING DELTA
+# MAGIC OPTIONS (path "${DA.paths.sales}");
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS products
+# MAGIC USING DELTA
+# MAGIC OPTIONS (path "${DA.paths.products}");
+# MAGIC
+# MAGIC CREATE TABLE IF NOT EXISTS events
+# MAGIC USING DELTA
+# MAGIC OPTIONS (path "${DA.paths.events}");
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT * 
+# MAGIC FROM products;
+
+# COMMAND ----------
+
+# MAGIC %sql 
+# MAGIC
+# MAGIC SELECT AVG(purchase_revenue_in_usd)
+# MAGIC FROM sales;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT DISTINCT(event_name)
+# MAGIC FROM events;
+
+# COMMAND ----------
+
+DA.cleanup
+
+# COMMAND ----------
+
 

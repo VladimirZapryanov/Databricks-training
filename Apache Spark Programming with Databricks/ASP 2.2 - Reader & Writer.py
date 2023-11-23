@@ -207,4 +207,106 @@ DA.cleanup()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Lab
+
+# COMMAND ----------
+
+single_product_csv_file_path = f"{DA.paths.datasets}/products/products.csv/part-00000-tid-1663954264736839188-daf30e86-5967-4173-b9ae-d1481d3506db-2367-1-c000.csv"
+print(dbutils.fs.head(single_product_csv_file_path))
+
+products_csv_path = f"{DA.paths.datasets}/products/products.csv"
+products_df = (spark
+           .read
+           .csv(products_csv_path, header=True, inferSchema=True)
+          )
+
+products_df.printSchema()
+
+# COMMAND ----------
+
+assert(products_df.count() == 12)
+print("All test pass")
+
+# COMMAND ----------
+
+from pyspark.sql.types import DoubleType, StringType, StructType, StructField
+
+user_defined_schema = StructType([
+    StructField('item_id', StringType(), True),
+    StructField('name', StringType(), True),
+    StructField('price', DoubleType(), True)
+])
+
+products_df2 = (spark
+                .read
+                .option('header', True)
+                .schema(user_defined_schema)
+                .csv(products_csv_path)
+                )
+
+# COMMAND ----------
+
+assert(user_defined_schema.fieldNames() == ["item_id", "name", "price"])
+print("All test pass")
+
+# COMMAND ----------
+
+from pyspark.sql import Row
+
+expected1 = Row(item_id="M_STAN_Q", name="Standard Queen Mattress", price=1045.0)
+result1 = products_df2.first()
+
+assert(expected1 == result1)
+print("All test pass")
+
+# COMMAND ----------
+
+ddl_schema = 'item_id string, name string, price double'
+
+products_df3 = (spark
+                .read
+                .option('header', True)
+                .schema(ddl_schema)
+                .csv(products_csv_path)
+                )
+
+# COMMAND ----------
+
+assert(products_df3.count() == 12)
+print("All test pass")
+
+
+# COMMAND ----------
+
+products_output_path = f"{DA.paths.working_dir}/delta/products"
+(products_df
+        .write
+        .format("delta")
+        .mode("overwrite")
+        .save(products_output_path)
+)
+
+# COMMAND ----------
+
+verify_files = dbutils.fs.ls(products_output_path)
+verify_delta_format = False
+verify_num_data_files = 0
+for f in verify_files:
+    if f.name == "_delta_log/":
+        verify_delta_format = True
+    elif f.name.endswith(".parquet"):
+        verify_num_data_files += 1
+
+assert verify_delta_format, "Data not written in Delta format"
+assert verify_num_data_files > 0, "No data written"
+del verify_files, verify_delta_format, verify_num_data_files
+print("All test pass")
+
+# COMMAND ----------
+
+DA.cleanup()
+
+# COMMAND ----------
+
 

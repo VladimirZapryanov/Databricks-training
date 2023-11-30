@@ -69,4 +69,37 @@ DA.cleanup()
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC # Lab
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col
+
+# Purchase events logged on the BedBricks website
+df = (spark.read.format("delta").load(DA.paths.events)
+      .withColumn("revenue", col("ecommerce.purchase_revenue_in_usd"))
+      .filter(col("revenue").isNotNull())
+      .drop("event_name")
+     )
+
+display(df)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import avg, sum
+
+traffic_df = (df
+             .groupBy("traffic_source")
+             .agg(sum("revenue").alias("total_rev")),
+             avg("revenue").alias("avg_rev")       
+
+)
+display(traffic_df)
+
+# avg_state_purchases_df = df.groupBy("geo.state").avg("ecommerce.purchase_revenue_in_usd")
+# display(avg_state_purchases_df)
+
+# COMMAND ----------
+
 

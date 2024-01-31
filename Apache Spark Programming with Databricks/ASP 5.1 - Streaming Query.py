@@ -172,7 +172,7 @@ display(spark.read.format("delta").load(coupons_output_path))
 
 # COMMAND ----------
 
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, approx_count_distinct, hour, window
 
 # COMMAND ----------
 
@@ -198,6 +198,121 @@ events_df = (df
 # COMMAND ----------
 
 DA.tests.validate_1_1(events_df.schema)
+
+# COMMAND ----------
+
+spark.conf.set("spark.sql.shuffle.partitions", spark.sparkContext.defaultParallelism)
+
+traffic_df = (events_df
+              .groupBy("traffic_source", window(col("createdAt"), "1 hour"))
+              .agg(approx_count_distinct("user_id").alias("active_users"))
+              .select(col("traffic_source"), col("active_users"), hour(col("window.start")).alias("hour"))
+              .sort("hour")
+             )
+
+display(traffic_df)
+
+# COMMAND ----------
+
+DA.tests.validate_2_1(traffic_df.schema)
+
+# COMMAND ----------
+
+display(traffic_df, streamName="hourly_traffic")
+
+# COMMAND ----------
+
+DA.block_until_stream_is_ready("hourly_traffic")
+
+for s in spark.streams.active:
+    if s.name == "hourly_traffic":
+        s.stop()
+        s.awaitTermination()
+
+# COMMAND ----------
+
+DA.tests.validate_4_1()
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## 5.1cL - Activity by Traffic Lab
+
+# COMMAND ----------
+
+# MAGIC %run "/Apache Spark/apache-spark-programming-with-databricks-english/Includes/Classroom-Setup-5.1c"
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col, approx_count_distinct, count
+
+# COMMAND ----------
+
+df = (spark
+      .readStream
+      .option("maxFilesPerTrigger", 1)
+      .format("delta")
+      .load(DA.paths.events)
+)
+
+# COMMAND ----------
+
+DA.tests.validate_1_1(df)
+
+# COMMAND ----------
+
+spark.conf.set("spark.sql.shuffle.partitions", spark.sparkContext.defaultParallelism)
+
+traffic_df = (df
+              .groupBy("traffic_source")
+              .agg(approx_count_distinct("user_id").alias("active_users"))
+              .sort("traffic_source")
+             )
+
+# COMMAND ----------
+
+DA.tests.validate_2_1(traffic_df.schema)
+
+# COMMAND ----------
+
+display(traffic_df)
+
+# COMMAND ----------
+
+traffic_query = (traffic_df
+                 .writeStream
+                 .queryName("active_users_by_traffic")
+                 .format("memory")
+                 .outputMode("complete")
+                 .trigger(processingTime="1 second")
+                 .start())
+
+DA.block_until_stream_is_ready("active_users_by_traffic")
+
+# COMMAND ----------
+
+DA.tests.validate_4_1(traffic_query)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC
+# MAGIC SELECT * FROM active_users_by_traffic
+
+# COMMAND ----------
+
+for s in spark.streams.active:
+    print(s.name)
+    s.stop()
+
+# COMMAND ----------
+
+DA.tests.validate_6_1(traffic_query)
+
+# COMMAND ----------
+
+DA.cleanup()
 
 # COMMAND ----------
 

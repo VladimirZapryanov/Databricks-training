@@ -16,6 +16,16 @@ users = [
         "last_updated_ts": datetime.datetime(2021, 2, 10, 1, 15, 0)
     },
     {
+        "id": None,
+        "first_name": None,
+        "last_name": None,
+        "email": None,
+        "is_customer": None,
+        "amount_paid": None,
+        "customer_from": None,
+        "last_updated_ts": None
+    },
+    {
         "id": 2,
         "first_name": "Nikolaus",
         "last_name": "Brewitt",
@@ -76,6 +86,46 @@ users = [
         "last_updated_ts": datetime.datetime(2021, 4, 2, 0, 55, 18)
     },
     {
+        "id": None,
+        "first_name": None,
+        "last_name": None,
+        "email": None,
+        "is_customer": None,
+        "amount_paid": None,
+        "customer_from": None,
+        "last_updated_ts": None
+    },
+    {
+        "id": 5,
+        "first_name": None,
+        "last_name": None,
+        "email": None,
+        "is_customer": None,
+        "amount_paid": None,
+        "customer_from": None,
+        "last_updated_ts": None
+    },
+    {
+        "id": None,
+        "first_name": None,
+        "last_name": None,
+        "email": "nbrewitt1@dailymail.co.uk",
+        "is_customer": None,
+        "amount_paid": None,
+        "customer_from": None,
+        "last_updated_ts": None
+    },
+    {
+        "id": None,
+        "first_name": "Kurt",
+        "last_name": "Rome",
+        "email": None,
+        "is_customer": False,
+        "amount_paid": None,
+        "customer_from": None,
+        "last_updated_ts": datetime.datetime(2021, 4, 2, 0, 55, 18)
+    },
+    {
         "id": 2,
         "first_name": "Nikolaus",
         "last_name": "Brewitt",
@@ -87,7 +137,6 @@ users = [
     }
 ]
 
-
 users_df = spark.createDataFrame(pd.DataFrame(users))
 
 # COMMAND ----------
@@ -96,27 +145,43 @@ users_df.show()
 
 # COMMAND ----------
 
-help(users_df.distinct)
+users_df.count()
 
 # COMMAND ----------
 
-users_df.distinct().show()
+users_df.na
 
 # COMMAND ----------
 
-help(users_df.drop_duplicates)
+help(users_df.dropna)
 
 # COMMAND ----------
 
-help(users_df.dropDuplicates)
+help(users_df.na.drop)
 
 # COMMAND ----------
 
-users_df.dropDuplicates(['id']).show()
+users_df.na.drop('all').show()
 
 # COMMAND ----------
 
-users_df.dropDuplicates(['id', 'amount_paid']).show()
+users_df.na.drop('any').show()
+
+# COMMAND ----------
+
+users_df.na.drop().show()
+
+# COMMAND ----------
+
+users_df.na.drop(thresh=2).show()
+
+# COMMAND ----------
+
+users_df.na.drop(how='all', subset=['id', 'email']).show()
+
+# COMMAND ----------
+
+users_df.na.drop(how='any', subset=['id', 'email']).show()
 
 # COMMAND ----------
 

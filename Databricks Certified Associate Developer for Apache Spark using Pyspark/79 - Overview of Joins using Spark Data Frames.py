@@ -7,4 +7,8 @@ help(courses_df.join)
 
 # COMMAND ----------
 
+help(courses_df.crossJoin)
+
+# COMMAND ----------
+
 
